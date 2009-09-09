@@ -1,6 +1,9 @@
 package jp.wxd.as3paintoco.sample.simple 
 {
 	import caurina.transitions.Tweener;
+	import com.adobe.images.PNGEncoder;
+	import flash.display.Bitmap;
+	import flash.display.BitmapData;
 	import flash.display.DisplayObject;
 	import flash.display.Shape;
 	import flash.display.Sprite;
@@ -11,6 +14,9 @@ package jp.wxd.as3paintoco.sample.simple
 	import flash.filters.DropShadowFilter;
 	import flash.filters.GlowFilter;
 	import flash.geom.ColorTransform;
+	import flash.net.FileReference;
+	import flash.utils.ByteArray;
+	import jp.wxd.as3paintoco.AS3Paintoco;
 	import jp.wxd.as3paintoco.command.MouseDownCommand;
 	import jp.wxd.as3paintoco.command.ReplayCommand;
 	import jp.wxd.as3paintoco.core.CanvasCore;
@@ -58,11 +64,6 @@ package jp.wxd.as3paintoco.sample.simple
 		private var _background:Shape;
 		
 		/**
-		 * canvas
-		 */
-		private var _canvas:Canvas;
-		
-		/**
 		 * color palette
 		 */
 		private var _colorPalette:ColorPalette;
@@ -92,6 +93,7 @@ package jp.wxd.as3paintoco.sample.simple
 			prepare();
 			initialize();
 			activate();
+			_data.paintoco.addHistory(initialize, null);
 		}
 		
 		//----------------------------------------------------------------------
@@ -116,20 +118,15 @@ package jp.wxd.as3paintoco.sample.simple
 		 */
 		private function prepareCanvas():void
 		{
-			// create backgroud
-			/*
-			_background = new Shape();
-			_background.graphics.lineStyle(1, 0xFFFFFFF);
-			_background.graphics.beginFill(0x000000, 1.0);
-			_background.graphics.drawRect(0, 0, CanvasSetting.CANVAS_WIDTH-2, CanvasSetting.CANVAS_HEIGHT-2);
-			*/
-			// create canvasCore
-			_data.canvasCore = new CanvasCore(CanvasSetting.CANVAS_WIDTH, CanvasSetting.CANVAS_HEIGHT);
-			_canvas = Canvas(_mainTimeline.addChild(_data.canvasCore.canvas));
-			_canvas.x = (CanvasSetting.STAGE_WIDTH - CanvasSetting.CANVAS_WIDTH) / 2;
-			_canvas.y = (CanvasSetting.STAGE_HEIGHT - CanvasSetting.CANVAS_HEIGHT) / 2;
-			//_canvas.background = _background;
-			_mainTimeline.addChild(_canvas);
+			// create Paintoco
+			_data.paintoco = new AS3Paintoco(
+				_mainTimeline, 
+				CanvasSetting.CANVAS_WIDTH, CanvasSetting.CANVAS_HEIGHT);
+			_data.paintoco.canvas.x
+				= (CanvasSetting.STAGE_WIDTH - CanvasSetting.CANVAS_WIDTH) / 2;
+			_data.paintoco.canvas.y
+				= (CanvasSetting.STAGE_HEIGHT - CanvasSetting.CANVAS_HEIGHT) / 2;
+			_data.paintoco.replayable = true;
 		}
 		
 		/**
@@ -149,7 +146,7 @@ package jp.wxd.as3paintoco.sample.simple
 		{
 			//[todo] CanvasSettingへ移行
 			// set effect option
-			_mainTimeline.optionEffect.addItem( { label:"のーまる", data:{} } );
+			_mainTimeline.optionEffect.addItem( { label:"のーまる", data:{filters:[]} } );
 			_mainTimeline.optionEffect.addItem( { label:"影付き", data:{filters:[new DropShadowFilter()]} } );
 			_mainTimeline.optionEffect.addItem( { label:"ふちどる", data: { filters:[new GlowFilter(0xffffff, 1, 4, 4, 20)] } } );
 			
@@ -184,7 +181,9 @@ package jp.wxd.as3paintoco.sample.simple
 		{
 			initializeToolOptions();
 			
-			_data.canvasCore.applyTool(_data.penTool);
+			_data.paintoco.applyTool(_data.penTool, _data.penTool.options);
+			_data.paintoco.initialize();
+			
 			_mainTimeline.optionWeight.value = _data.penTool.options.thickness;
 			_mainTimeline.optionEffect.selectedIndex = 0;
 			
@@ -199,12 +198,6 @@ package jp.wxd.as3paintoco.sample.simple
 			_data.backgroundColor = CanvasSetting.CANVAS_BACKGOUND_COLOR;
 			
 			btnPen_clickHandler();
-			
-			// for replay
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(new Commands(new ReplayCommand(null, initialize, null)));
-			}
 		}
 		
 		/**
@@ -284,6 +277,8 @@ package jp.wxd.as3paintoco.sample.simple
 			_mainTimeline.btnRedo.addEventListener(MouseEvent.CLICK, btnRedo_clickHandler);
 			_mainTimeline.btnClear.buttonMode = true;
 			_mainTimeline.btnClear.addEventListener(MouseEvent.CLICK, btnClear_clickHandler);
+			_mainTimeline.btnSave.buttonMode = true;
+			_mainTimeline.btnSave.addEventListener(MouseEvent.CLICK, btnSave_clickHandler);
 			
 			// replay
 			_mainTimeline.btnReplay.buttonMode = true;
@@ -294,12 +289,7 @@ package jp.wxd.as3paintoco.sample.simple
 			_mainTimeline.btnBgColor.addEventListener(MouseEvent.CLICK, btnBgColor_clickHandler);
 			
 			// canvas
-			_data.canvasCore.addEventListener(DrawingEvent.START_DRAWING, canvasCore_startDrawingHandler);
-			_data.canvasCore.addEventListener(DrawingEvent.MOVE_DRAWING, canvasCore_moveDrawingHandler);
-			_data.canvasCore.addEventListener(DrawingEvent.STOP_DRAWING, canvasCore_stopDrawingHandler);
-			_data.canvasCore.addEventListener(DrawingTextEvent.STOP_DRAWING, canvasCore_stopDrawingTextHandler);
-			_data.canvasCore.addEventListener(DrawingFocusChange.MOUSE_FOCUS_CHANGE, canvasCore_mouseFocusChangeHandler);
-			_data.canvasCore.activate();
+			_data.paintoco.activate();
 			
 			// replay option
 			_mainTimeline.replaySpeed.enabled = true;
@@ -344,6 +334,8 @@ package jp.wxd.as3paintoco.sample.simple
 			_mainTimeline.btnRedo.removeEventListener(MouseEvent.CLICK, btnRedo_clickHandler);
 			_mainTimeline.btnClear.buttonMode = false;
 			_mainTimeline.btnClear.removeEventListener(MouseEvent.CLICK, btnClear_clickHandler);
+			_mainTimeline.btnSave.buttonMode = false;
+			_mainTimeline.btnSave.removeEventListener(MouseEvent.CLICK, btnSave_clickHandler);
 			
 			// replay
 			_mainTimeline.btnReplay.buttonMode = false;
@@ -354,12 +346,7 @@ package jp.wxd.as3paintoco.sample.simple
 			_mainTimeline.btnBgColor.removeEventListener(MouseEvent.CLICK, btnBgColor_clickHandler);
 			
 			// canvas
-			_data.canvasCore.removeEventListener(DrawingEvent.START_DRAWING, canvasCore_startDrawingHandler);
-			_data.canvasCore.removeEventListener(DrawingEvent.MOVE_DRAWING, canvasCore_moveDrawingHandler);
-			_data.canvasCore.removeEventListener(DrawingEvent.STOP_DRAWING, canvasCore_stopDrawingHandler);
-			_data.canvasCore.removeEventListener(DrawingTextEvent.STOP_DRAWING, canvasCore_stopDrawingTextHandler);
-			_data.canvasCore.removeEventListener(DrawingFocusChange.MOUSE_FOCUS_CHANGE, canvasCore_mouseFocusChangeHandler);
-			_data.canvasCore.deactivate();
+			_data.paintoco.deactivate();
 			
 			// replay option
 			_mainTimeline.replaySpeed.enabled = false;
@@ -399,7 +386,7 @@ package jp.wxd.as3paintoco.sample.simple
 			_data.color = color32;
 			
 			// for replay
-			if (!_data.isReplaying) _data.replayQueue.push(new Commands(new ReplayCommand(null, pickupColor, [mouseX, mouseY])));
+			_data.paintoco.addHistory(pickupColor, [mouseX, mouseY]);
 		}
 		
 		/**
@@ -420,18 +407,9 @@ package jp.wxd.as3paintoco.sample.simple
 	
 			// apply bg color
 			_data.backgroundColor = color24;
-/*
-			var background:Shape = new Shape();
-			background.graphics.lineStyle(1, 0xFFFFFFF);
-			background.graphics.beginFill(color24, alpha);
-			background.graphics.drawRect(0, 0, CanvasSetting.CANVAS_WIDTH - 2, CanvasSetting.CANVAS_HEIGHT -2);
-			_canvas.background = background;
-*/
-//			Shape(_canvas.background).graphics.beginFill(color24, alpha);
-//			Shape(_canvas.background).graphics.drawRect(0, 0, CanvasSetting.CANVAS_WIDTH - 2, CanvasSetting.CANVAS_HEIGHT -2);
 
 			// for replay
-			if (!_data.isReplaying) _data.replayQueue.push(new Commands(new ReplayCommand(null, pickupBgColor, [mouseX, mouseY])));
+			_data.paintoco.addHistory(pickupBgColor, [mouseX, mouseY]);
 		}
 		
 		//------------------------------
@@ -485,23 +463,7 @@ package jp.wxd.as3paintoco.sample.simple
 					_mainTimeline.optionWeight.value = _data.thickness;
 					break;
 				}
-				case "isReplaying":
-				{
-					if (_data.isReplaying && !_data.replayQueue.running)
-					{
-						deactivate();
-						
-						var replaySpeed:Number = _mainTimeline.replaySpeed.selectedItem.data;
-						_data.canvasCore.initialize(CanvasSetting.CANVAS_WIDTH, CanvasSetting.CANVAS_HEIGHT);
-//						_canvas.background = _background;
-						_data.replayQueue.replay(replaySpeed);
-					}
-					else
-					{
-						activate();
-					}
-				}
-				
+			
 				case "filters":
 				{
 					_data.penTool.options.filters = _data.filters;
@@ -520,14 +482,13 @@ package jp.wxd.as3paintoco.sample.simple
 					background.graphics.lineStyle(1, 0xFFFFFFF);
 					background.graphics.beginFill(color24);
 					background.graphics.drawRect(0, 0, CanvasSetting.CANVAS_WIDTH - 2, CanvasSetting.CANVAS_HEIGHT -2);
-					_canvas.background = background;
+					_data.paintoco.background = background;
 					
 					// change view's color
 					colorTransform = new ColorTransform();
 					colorTransform.color = color24;
 					_mainTimeline.btnBgColor.color.transform.colorTransform = colorTransform;
 
-					
 					break;
 				}
 			}
@@ -541,9 +502,7 @@ package jp.wxd.as3paintoco.sample.simple
 		private function btnSelect_clickHandler(event:MouseEvent = null):void
 		{
 			changeIconColor(_mainTimeline.btnSelect);
-//			_data.canvasCore.canvasData.activeTool = _data.selectTool;
-			_data.canvasCore.applyTool(_data.selectTool);
-			// for replay
+			_data.paintoco.applyTool(_data.selectTool);
 		}
 		
 		/**
@@ -554,9 +513,7 @@ package jp.wxd.as3paintoco.sample.simple
 		private function btnPen_clickHandler(event:MouseEvent = null):void
 		{
 			changeIconColor(_mainTimeline.btnPen);
-//			_data.canvasCore.canvasData.activeTool = _data.penTool;
-			_data.canvasCore.applyTool(_data.penTool);
-			// for replay
+			_data.paintoco.applyTool(_data.penTool);
 		}
 		
 		/**
@@ -567,9 +524,7 @@ package jp.wxd.as3paintoco.sample.simple
 		private function btnText_clickHandler(event:MouseEvent = null):void
 		{
 			changeIconColor(_mainTimeline.btnText);
-//			_data.canvasCore.canvasData.activeTool = _data.textTool;
-			_data.canvasCore.applyTool(_data.textTool);
-			// for replay
+			_data.paintoco.applyTool(_data.textTool);
 		}
 		
 		/**
@@ -580,9 +535,7 @@ package jp.wxd.as3paintoco.sample.simple
 		private function btnLine_clickHandler(event:MouseEvent = null):void
 		{
 			changeIconColor(_mainTimeline.btnLine);
-//			_data.canvasCore.canvasData.activeTool = _data.lineTool;
-			_data.canvasCore.applyTool(_data.lineTool);
-			// for replay
+			_data.paintoco.applyTool(_data.lineTool);
 		}
 		
 		/**
@@ -593,9 +546,7 @@ package jp.wxd.as3paintoco.sample.simple
 		private function btnSquare_clickHandler(event:MouseEvent = null):void
 		{
 			changeIconColor(_mainTimeline.btnSquare);
-//			_data.canvasCore.canvasData.activeTool = _data.squareTool;
-			_data.canvasCore.applyTool(_data.squareTool);
-			// for replay
+			_data.paintoco.applyTool(_data.squareTool);
 		}
 		
 		/**
@@ -606,9 +557,7 @@ package jp.wxd.as3paintoco.sample.simple
 		private function btnCircle_clickHandler(event:MouseEvent = null):void
 		{
 			changeIconColor(_mainTimeline.btnCircle);
-//			_data.canvasCore.canvasData.activeTool = _data.circleTool;
-			_data.canvasCore.applyTool(_data.circleTool);
-			// for replay
+			_data.paintoco.applyTool(_data.circleTool);
 		}
 		
 		/**
@@ -654,19 +603,10 @@ package jp.wxd.as3paintoco.sample.simple
 		private function optionWeight_changeHandler(event:Event = null):void
 		{
 			_data.thickness = _mainTimeline.optionWeight.value;
-			
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							function(thickness:uint) {_data.thickness = thickness},
-							[_data.thickness]
-						)
-					)
-				);
-			}
+			_data.paintoco.addHistory(
+				function(thickness:Number):void {_data.thickness = thickness;},
+				[_data.thickness]
+			);
 		}
 		
 		/**
@@ -677,19 +617,10 @@ package jp.wxd.as3paintoco.sample.simple
 		private function optionEffect_changeHandler(event:Event = null):void
 		{
 			_data.filters = _mainTimeline.optionEffect.selectedItem.data.filters;
-			
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							function(filters:Array) {_data.filters = filters},
-							[_data.filters.concat()]
-						)
-					)
-				);
-			}
+			_data.paintoco.addHistory(
+				function(filters:Array):void {_data.filters = filters;},
+				[_data.filters.concat()]
+			);
 		}
 		
 		/**
@@ -700,18 +631,10 @@ package jp.wxd.as3paintoco.sample.simple
 		private function optionAlpha_changeHandler(event:Event = null):void
 		{
 			_data.color = event.target.color;
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							function(color:uint) {_data.color = color},
-							[_data.color]
-						)
-					)
-				);
-			}
+			_data.paintoco.addHistory(
+				function(color:uint):void {_data.color = color;},
+				[_data.color]
+			);
 		}
 		
 		/**
@@ -722,20 +645,11 @@ package jp.wxd.as3paintoco.sample.simple
 		private function optionThickness_changeHandler(event:Event = null):void
 		{
 			_data.thickness = event.target.thickness;
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							function(thickness:Number) {_data.thickness = thickness},
-							[_data.thickness]
-						)
-					)
-				);
-			}
+			_data.paintoco.addHistory(
+				function(thickness:Number):void {_data.thickness = thickness;},
+				[_data.thickness]
+			);
 		}
-		
 		
 		/**
 		 * handler of MouseEvent.CLICK
@@ -744,23 +658,7 @@ package jp.wxd.as3paintoco.sample.simple
 		 */
 		private function btnUndo_clickHandler(event:MouseEvent = null):void
 		{
-			if (!_data.canvasCore.stack.hasPrevious) return;
-			var command:IRedoableCommand = _data.canvasCore.stack.previous;
-			if (command) MouseDownCommand(command).undo();
-			
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							btnUndo_clickHandler,
-							null
-						)
-					)
-				);
-			}
-			
+			_data.paintoco.undo();
 		}
 		
 		/**
@@ -770,22 +668,7 @@ package jp.wxd.as3paintoco.sample.simple
 		 */
 		private function btnRedo_clickHandler(event:MouseEvent = null):void
 		{
-			if (!_data.canvasCore.stack.hasNext) return;
-			var command:IRedoableCommand = _data.canvasCore.stack.next;
-			if (command) MouseDownCommand(command).redo();
-			
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							btnRedo_clickHandler,
-							null
-						)
-					)
-				);
-			}
+			_data.paintoco.redo();
 		}
 		
 		/**
@@ -795,25 +678,16 @@ package jp.wxd.as3paintoco.sample.simple
 		 */
 		private function btnClear_clickHandler(event:MouseEvent = null):void
 		{	
-			deactivate();
-			_data.canvasCore.initialize(CanvasSetting.CANVAS_WIDTH, CanvasSetting.CANVAS_HEIGHT);
 			initialize();
-			activate();
-//			_canvas.background = _background;
-			
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							btnClear_clickHandler,
-							null
-						)
-					)
-				);
-			}
-			
+		}
+		
+		/**
+		 * handler of MouseEvent.CLICK
+		 * @param	event
+		 */
+		private function btnSave_clickHandler(event:MouseEvent = null):void
+		{
+			_data.paintoco.save(AS3Paintoco.DEFAULT_FILE_NAME, "png");
 		}
 		
 		/**
@@ -823,8 +697,8 @@ package jp.wxd.as3paintoco.sample.simple
 		 */
 		private function btnReplay_clickHandler(event:MouseEvent = null):void
 		{
-			if (_data.isReplaying) return;
-			_data.isReplaying = true;
+			var speed:Number = _mainTimeline.replaySpeed.selectedItem.data;
+			_data.paintoco.replay(speed);
 		}
 		
 		/**
@@ -860,111 +734,6 @@ package jp.wxd.as3paintoco.sample.simple
 		{
 			_colorPalette.removeEventListener(MouseEvent.CLICK, _bgcolorPalette_clickHandler);
 			pickupBgColor(_colorPalette.mouseX, _colorPalette.mouseY);
-		}
-		
-		/**
-		 * handler of DrawingEvent.START_DRAWING
-		 *  dispatched from _canvasCore
-		 * @param event
-		 */
-		private function canvasCore_startDrawingHandler(event:DrawingEvent):void
-		{
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							_data.canvasCore.mouseDown,
-							[event.tool, event.x, event.y]
-						)
-					)
-				);
-			}
-		}
-		
-		/**
-		 * handler of DrawingEvent.START_DRAWING
-		 *  dispatched from _canvasCore
-		 * @param event
-		 */
-		private function canvasCore_moveDrawingHandler(event:DrawingEvent):void
-		{
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							_data.canvasCore.mouseMove,
-							[event.tool, event.x, event.y]
-						)
-					)
-				);
-			}
-		}
-		
-		/**
-		 * handler of DrawingEvent.START_DRAWING
-		 *  dispatched from _canvasCore
-		 * @param event
-		 */
-		private function canvasCore_stopDrawingHandler(event:DrawingEvent):void
-		{
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							_data.canvasCore.mouseUp,
-							[event.tool, event.x, event.y]
-						)
-					)
-				);
-			}
-		}
-		
-		/**
-		 * handler of DrawingTextEvent.STOP_DRAWING
-		 *  dispatched from _canvasCore
-		 * @param event
-		 */
-		private function canvasCore_stopDrawingTextHandler(event:DrawingTextEvent):void
-		{
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							_data.canvasCore.keyUp,
-							[event.tool, event.charCode, event.text]
-						)
-					)
-				);
-			}
-		}
-		
-		/**
-		 * handler of DrawingFocusChange.MOUSE_FOCUS_CHANGE
-		 *  dispatched from _canvasCore
-		 * @param event
-		 */
-		private function canvasCore_mouseFocusChangeHandler(event:DrawingFocusChange):void
-		{
-			if (!_data.isReplaying) 
-			{
-				_data.replayQueue.push(
-					new Commands(
-						new ReplayCommand(
-							null,
-							_data.canvasCore.mouseFocusChange,
-							[event.tool]
-						)
-					)
-				);
-			}
 		}
 	}
 }

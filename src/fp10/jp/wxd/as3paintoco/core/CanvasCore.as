@@ -72,8 +72,7 @@ package jp.wxd.as3paintoco.core
 	
 	
 	/**
-	 * <p>CanvasCoreクラスは、as3 Drawingライブラリを使用する際にインスタンス化するクラスです。
-	 * 画を描く際、キャンバスのコントローラの役割を担います。</p>
+	 * <p>CanvasCoreクラスは画を描く際に、キャンバスのコントローラの役割を担います。</p>
 	 * @author Copyright (C) naoto koshikawa, All Rights Reserved.
 	 */
 	public class CanvasCore extends EventDispatcher
@@ -164,6 +163,7 @@ package jp.wxd.as3paintoco.core
 		 */
 		public function activate():void
 		{
+			if (!_canvasData.activeTool) return;
 			_canvasData.isActive = true;
 			_canvasData.addEventListener(Event.CHANGE, _canvasData_changeHandler, false, int.MAX_VALUE);
 			// User Event
@@ -223,7 +223,7 @@ package jp.wxd.as3paintoco.core
 			_canvas.addEventListener(MouseEvent.MOUSE_MOVE, _canvas_mouseMoveHandler, false, int.MAX_VALUE);
 			_canvas.addEventListener(KeyboardEvent.KEY_DOWN, _canvas_keyDownHandler, false, int.MAX_VALUE);
 			_canvas.addEventListener(KeyboardEvent.KEY_UP, _canvas_keyUpHandler, false, int.MAX_VALUE);
-			_canvas.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, _canvas_mouseFocusChangeHandler, false, int.MAX_VALUE);
+			_canvas.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, _canvas_mouseFocusChangeHandler, true, int.MAX_VALUE);
 			var command:IRedoableCommand = new MouseDownCommand(tool, currentX, currentY, stroke);
 			command.execute();
 			_stack.push(command);
@@ -259,6 +259,12 @@ package jp.wxd.as3paintoco.core
 			var customEvent:DrawingEvent = new DrawingEvent(DrawingEvent.STOP_DRAWING, true, true, tool, currentX, currentY);
 			dispatchEvent(customEvent);
 			if (customEvent.isDefaultPrevented()) return;
+			
+			if (!_canvasData.isActive)
+			{
+				// 自動実行の場合
+				tool.mouseFocusChange();
+			}
 			
 			_canvas.addEventListener(MouseEvent.MOUSE_DOWN, _canvas_mouseDownHandler, false, int.MAX_VALUE);
 			_canvas.removeEventListener(MouseEvent.MOUSE_UP, _canvas_mouseUpHandler, false);

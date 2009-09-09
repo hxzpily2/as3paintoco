@@ -2,6 +2,7 @@ package jp.wxd.as3paintoco.sample
 {
 	import flash.display.Shape;
 	import flash.display.Sprite;
+	import jp.wxd.as3paintoco.AS3Paintoco;
 	import jp.wxd.as3paintoco.core.CanvasCore;
 	import jp.wxd.as3paintoco.tools.PenTool;
 	
@@ -28,20 +29,17 @@ package jp.wxd.as3paintoco.sample
 			canvasBackground.graphics.beginFill(0xFEFEFE, 1.0);
 			canvasBackground.graphics.drawRect(0, 0, 300, 300);
 			
-			// CanvasCoreをインスタンス化します。
-			var canvasCore:CanvasCore = new CanvasCore(302, 302);
+			// Paintocoをインスタンス化します。
+			var paintoco:AS3Paintoco = new AS3Paintoco(this, 302, 302);
 			
 			// Canvasインスタンスに先ほど作成した背景を指定します。
-			canvasCore.canvas.background = canvasBackground;
-			
-			// CanvasインスタンスをDisplayObjectツリーに追加します。
-			addChild(canvasCore.canvas);
+			paintoco.background = canvasBackground;
 			
 			// ペンツールを適用します。
-			canvasCore.applyTool(new PenTool());
+			paintoco.applyTool(new PenTool());
 
 			// キャンバスを使用可能にします。
-			canvasCore.activate();
+			paintoco.activate();
 		}	
 	}	
 }

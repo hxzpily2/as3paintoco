@@ -36,7 +36,6 @@ package jp.wxd.as3paintoco.tools
 	/**
 	 * 標準的なテキストツールです。
 	 * @author	Copyright (C) naoto koshikawa <naoto5959[at]gmail.com>
-	 * @version 0.0.2
 	 */
 	public class TextTool extends BaseTool implements ITool
 	{
@@ -122,7 +121,7 @@ package jp.wxd.as3paintoco.tools
 			
 			_displayObject.defaultTextFormat = format;
 			_displayObject.type = TextFieldType.INPUT;
-//			_displayObject.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, displayObject_MouseFocusChangeHandler);
+			_displayObject.addEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, displayObject_MouseFocusChangeHandler);
 			
 			_displayObject.maxChars = _options.maxChars;
 			_displayObject.multiline = _options.multiline;
@@ -159,11 +158,7 @@ package jp.wxd.as3paintoco.tools
 		private function displayObject_MouseFocusChangeHandler(event:FocusEvent):void
 		{
 			_displayObject.removeEventListener(FocusEvent.MOUSE_FOCUS_CHANGE, displayObject_MouseFocusChangeHandler);
-			_displayObject.type = TextFieldType.DYNAMIC;
-			_displayObject.selectable = false;
-			_displayObject.mouseEnabled = false;
-			_displayObject.filters = _options.filters;
-			if (_options.stage)	_options.stage.focus = _options.stage;
+			mouseFocusChange();
 		}
 	}
 }

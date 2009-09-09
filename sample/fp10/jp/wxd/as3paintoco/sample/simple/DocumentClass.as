@@ -107,6 +107,11 @@ package jp.wxd.as3paintoco.sample.simple
 		public var btnClear:MovieClip;
 		
 		/**
+		 * save button
+		 */
+		public var btnSave:MovieClip;
+		
+		/**
 		 * color button
 		 */
 		public var btnColor:MovieClip;
@@ -147,6 +152,7 @@ package jp.wxd.as3paintoco.sample.simple
 		 */
 		public function DocumentClass() 
 		{
+			btnLoadimage.visible = false;
 			new Controller(this);
 		}
 	}

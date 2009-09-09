@@ -4,6 +4,7 @@ package jp.wxd.as3paintoco.sample.simple.data
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.geom.ColorTransform;
+	import jp.wxd.as3paintoco.AS3Paintoco;
 	import jp.wxd.as3paintoco.command.ReplayQueue;
 	import jp.wxd.as3paintoco.core.CanvasCore;
 	import jp.wxd.as3paintoco.tools.CircleTool;
@@ -23,27 +24,18 @@ package jp.wxd.as3paintoco.sample.simple.data
 		//----------------------------------------------------------------------
 		//  prorperties
 		//----------------------------------------------------------------------
-		private var _canvasCore:CanvasCore;
+		private var _paintoco:AS3Paintoco;
 		/**
-		 * canvas core
+		 * AS3Paintoco instance
 		 */
-		public function get canvasCore():CanvasCore
+		public function get paintoco():AS3Paintoco
 		{
-			return _canvasCore;
+			return _paintoco;
 		}
 		/** @private */
-		public function set canvasCore(value:CanvasCore):void
+		public function set paintoco(value:AS3Paintoco):void
 		{
-			_canvasCore = value;
-		}
-		
-		private var _replayQueue:ReplayQueue;
-		/**
-		 * ReplayCommand Queue
-		 */
-		public function get replayQueue():ReplayQueue
-		{
-			return _replayQueue;
+			_paintoco = value;
 		}
 		
 		//------------------------------
@@ -179,21 +171,6 @@ package jp.wxd.as3paintoco.sample.simple.data
 		//  other properties
 		//------------------------------
 		
-		private var _isReplaying:Boolean = false;
-		/**
-		 * indicate whether during replaying or not
-		 */
-		public function get isReplaying():Boolean
-		{
-			return _isReplaying;
-		}
-		/** @private */
-		public function set isReplaying(value:Boolean):void
-		{
-			_isReplaying = value;
-			dispatchEvent(new DataEvent(Event.CHANGE, false, false, "isReplaying"));
-		}
-		
 		private var _normalColorTransform:ColorTransform;
 		/**
 		 * ColorTransform for normal status
@@ -222,8 +199,6 @@ package jp.wxd.as3paintoco.sample.simple.data
 		 */
 		public function Data() 
 		{
-			_replayQueue = new ReplayQueue();
-			_replayQueue.addEventListener(Event.COMPLETE, _replayQueue_completeHandler);
 			_penTool = new PenTool();
 			_lineTool = new LineTool();
 			_squareTool = new SquareTool();
@@ -232,19 +207,6 @@ package jp.wxd.as3paintoco.sample.simple.data
 			_selectTool = new SelectTool();
 			_normalColorTransform = new ColorTransform();
 			_selectedColorTransform = new ColorTransform();
-		}
-		
-		//------------------------------
-		//  event handler
-		//------------------------------
-		/**
-		 * event handler of Event.COMPLETE
-		 *  dispatched from _replayQueue
-		 * @param	event
-		 */
-		private function _replayQueue_completeHandler(event:Event):void
-		{
-			isReplaying = false;
 		}
 	}
 }

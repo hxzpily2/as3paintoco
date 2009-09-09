@@ -51,7 +51,7 @@ package jp.wxd.as3paintoco.command
 		/**
 		 * maximum interval
 		 */
-		private static const MAX_INTERVAL:Number = 1000 * 60;
+		private static const MAX_INTERVAL:Number = 1000 * 15;
 		
 		/**
 		 * minimum interval
