@@ -7,6 +7,7 @@
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.net.FileReference;
 	import flash.utils.ByteArray;
 	import jp.wxd.as3paintoco.command.MouseDownCommand;
@@ -17,6 +18,7 @@
 	import jp.wxd.as3paintoco.events.DrawingEvent;
 	import jp.wxd.as3paintoco.events.DrawingFocusChange;
 	import jp.wxd.as3paintoco.events.DrawingTextEvent;
+	import jp.wxd.as3paintoco.events.ReplayEvent;
 	import jp.wxd.as3paintoco.tools.ITool;
 	import jp.wxd.as3paintoco.tools.TextTool;
 	import jp.wxd.core.command.Commands;
@@ -35,7 +37,7 @@
 	 * </code>
 	 * @author Copyright (C) naoto koshikawa, All Rights Reserved.
 	 */
-	public class AS3Paintoco 
+	public class AS3Paintoco extends EventDispatcher
 	{
 		//----------------------------------------------------------------------
 		//  static properties
@@ -235,6 +237,7 @@
 			_replayQueue.addEventListener(Event.COMPLETE, 
 				_replayQueue_completeHandler);
 			_replayQueue.replay(speed);
+			dispatchEvent(new ReplayEvent(ReplayEvent.START_REPLAY));
 		}
 		
 		/**
@@ -366,6 +369,7 @@
 			_replayQueue.removeEventListener(Event.COMPLETE,
 				_replayQueue_completeHandler);
 			activate();
+			dispatchEvent(new ReplayEvent(ReplayEvent.END_REPLAY));
 		}
 		
 		/**
