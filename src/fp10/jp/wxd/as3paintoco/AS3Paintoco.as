@@ -1,4 +1,4 @@
-﻿package jp.wxd.as3paintoco
+package jp.wxd.as3paintoco
 {
 	import com.adobe.images.JPGEncoder;
 	import com.adobe.images.PNGEncoder;
@@ -26,7 +26,23 @@
 	import jp.wxd.utils.clone;
 	
 	/**
-	 * <p>AS3Paintocoはペイントコを利用する際に、インスタンス化するクラスです。</p>
+	 * <p>Replay開始時、終了時に送出されるイベントです</p>
+	 * <p></p>
+	 * 
+	 * @eventType jp.wxd.as3paintoco.events.ReplayEvent.START_REPLAY
+	 */
+	[Event( name = "startReplay", type = "jp.wxd.as3paintoco.events.DrawingEvent" )]
+	
+	/**
+	 * <p>Replay終了時、終了時に送出されるイベントです</p>
+	 * <p></p>
+	 * 
+	 * @eventType jp.wxd.as3paintoco.events.ReplayEvent.END_REPLAY
+	 */
+	[Event( name = "endReplay", type = "jp.wxd.as3paintoco.events.DrawingEvent" )]
+	
+	/**
+	 * <p>AS3Paintocoはぺいんとこを利用する際に、インスタンス化するクラスです。</p>
 	 * <code>
 	 * <pre>
 	 * // create AS3Paintoco
@@ -243,18 +259,13 @@
 		/**
 		 * <p>IToolを適用します。</p>
 		 * @param	tool
-		 * @param	options	このパラメータは削除する可能性があります。
 		 */
-		public function applyTool(tool:ITool, options:Object = null):void
+		public function applyTool(tool:ITool):void
 		{
 			if (tool is TextTool) tool.options.stage = _canvas.stage;
-			if (options == null)
-				options = tool.options;
-			else
-				tool.options = options;
 			_canvasCore.applyTool(tool);
-			addHistory(applyTool, [tool, clone(options)]);
-		}	
+			addHistory(applyTool, [tool]);
+		}
 		
 		/**
 		 * <p>キャンバスをローカルファイルシステムにファイルを保存するためのダイアログボックスを開きます。</p>

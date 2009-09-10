@@ -1,4 +1,4 @@
-/*
+﻿/*
 Licensed under the MIT License
 
 Copyright (c) 2009 naoto koshikawa
@@ -62,7 +62,7 @@ package jp.wxd.as3paintoco.tools
 			_stroke.addChildAt(_displayObject = new Shape(), 0);
 			_stroke.x = x;
 			_stroke.y = y;
-			_displayObject.filters = _options.filters;
+			_stroke.filters = _options.filters;
 			_graphics = _displayObject.graphics;
 		}
 		
